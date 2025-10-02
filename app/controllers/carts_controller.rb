@@ -1,5 +1,6 @@
 class CartsController < ApplicationController
   before_action :set_cart, only: %i[ show edit update destroy ]
+  before_action :ensure_correct_cart, only: [ :show ]
   rescue_from ActiveRecord::RecordNotFound, with: :invalid_cart
 
   # GET /carts or /carts.json
@@ -9,6 +10,7 @@ class CartsController < ApplicationController
 
   # GET /carts/1 or /carts/1.json
   def show
+    @cart = Cart.find(session[:cart_id])
   end
 
   # GET /carts/new
@@ -72,6 +74,14 @@ class CartsController < ApplicationController
 
     def invalid_cart
       logger.error "Attempt to access invalid cart #{params[:id]}"
-      redirect_to store_index_url, notice: 'Invalid cart'
+      redirect_to store_index_url, alert: 'Invalid cart'
+    end
+
+    def ensure_correct_cart
+      if session[:cart_id].nil?
+        redirect_to store_index_path, alert: 'No active cart found'
+      elsif params[:id].to_i != session[:cart_id].to_i
+        redirect_to cart_path(session[:cart_id]), notice: 'Access denied: You can only only view your own cart.'
+      end
     end
 end

@@ -56,7 +56,7 @@ class LineItemsController < ApplicationController
     @line_item.destroy!
 
     respond_to do |format|
-      format.html { redirect_to line_items_path, notice: 'Line item was successfully destroyed.', status: :see_other }
+      format.html { redirect_to @line_item.cart, notice: "#{@line_item.product.title} was removed", status: :see_other }
       format.json { head :no_content }
     end
   end
