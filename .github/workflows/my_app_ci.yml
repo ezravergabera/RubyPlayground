@@ -1,13 +1,21 @@
-name: CI
+name: CI (My App)
 
 on:
-  pull_request:
   push:
     branches: [ main ]
+    paths:
+      - 'my_app/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'my_app/**'
 
 jobs:
   scan_ruby:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: my_app
 
     steps:
       - name: Checkout code
@@ -16,14 +24,18 @@ jobs:
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: .ruby-version
+          ruby-version: my_app/.ruby-version
           bundler-cache: true
+          working-directory: my_app
 
-      - name: Scan for common Rails security vulnerabilities using static analysis
+      - name: Scan for common Rails security vulnerabilities
         run: bin/brakeman --no-pager
 
   scan_js:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: my_app
 
     steps:
       - name: Checkout code
@@ -32,14 +44,19 @@ jobs:
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: .ruby-version
+          ruby-version: my_app/.ruby-version
           bundler-cache: true
+          working-directory: my_app
 
-      - name: Scan for security vulnerabilities in JavaScript dependencies
+      - name: Scan JavaScript dependencies
         run: bin/importmap audit
 
   lint:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: my_app
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -47,21 +64,19 @@ jobs:
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: .ruby-version
+          ruby-version: my_app/.ruby-version
           bundler-cache: true
+          working-directory: my_app
 
-      - name: Lint code for consistent style
+      - name: Lint Ruby code
         run: bin/rubocop -f github
 
   test:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: my_app
 
-    # services:
-    #  redis:
-    #    image: redis
-    #    ports:
-    #      - 6379:6379
-    #    options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
     steps:
       - name: Install packages
         run: sudo apt-get update && sudo apt-get install --no-install-recommends -y build-essential git libyaml-dev pkg-config google-chrome-stable
@@ -72,13 +87,13 @@ jobs:
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: .ruby-version
+          ruby-version: my_app/.ruby-version
           bundler-cache: true
+          working-directory: my_app
 
-      - name: Run tests
+      - name: Run Rails tests
         env:
           RAILS_ENV: test
-          # REDIS_URL: redis://localhost:6379/0
         run: bin/rails db:test:prepare test test:system
 
       - name: Keep screenshots from failed system tests
@@ -86,5 +101,5 @@ jobs:
         if: failure()
         with:
           name: screenshots
-          path: ${{ github.workspace }}/tmp/screenshots
+          path: my_app/tmp/screenshots
           if-no-files-found: ignore
